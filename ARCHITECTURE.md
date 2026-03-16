@@ -171,11 +171,11 @@ The integration acquires data through two independent channels: **MQTT streaming
 | Service | Method | Endpoint | Purpose | Quota Impact |
 |---|---|---|---|---|
 | **CarData Streaming** | MQTT | `customer.streaming-cardata.bmwgroup.com:9000` | Real-time vehicle telemetry push | Unlimited |
-| **Telematics API** | `GET` | `/api/v1/customers/vehicles/{vin}/tele` | Current vehicle state snapshot | 50 calls/24h total |
-| **Basic Data API** | `GET` | `/api/v1/customers/vehicles/{vin}/basicData` | Vehicle metadata (model, series) | Included in quota |
-| **Vehicle Mappings** | `GET` | `/api/v1/customers/vehicles/mappings` | List user's registered vehicles | Included in quota |
-| **Charging History** | `GET` | `/api/v1/customers/vehicles/{vin}/chargingHistory` | Historical charging sessions | ~1 call/24h |
-| **Tyre Diagnosis** | `GET` | `/api/v1/customers/vehicles/{vin}/tyreDiagnosis` | Tyre health and pressure data | ~1 call/24h |
+| **Telematics API** | `GET` | `/customers/vehicles/{vin}/telematicData` | Current vehicle state snapshot | 50 calls/24h total |
+| **Basic Data API** | `GET` | `/customers/vehicles/{vin}/basicData` | Vehicle metadata (model, series) | Included in quota |
+| **Vehicle Mappings** | `GET` | `/customers/vehicles/mappings` | List user's registered vehicles | Included in quota |
+| **Charging History** | `GET` | `/customers/vehicles/{vin}/chargingHistory` | Historical charging sessions | ~1 call/24h |
+| **Tyre Diagnosis** | `GET` | `/customers/vehicles/{vin}/smartMaintenanceTyreDiagnosis` | Tyre health and pressure data | ~1 call/24h |
 
 ### 3.2 Key URL Constants
 
@@ -183,10 +183,12 @@ The integration acquires data through two independent channels: **MQTT streaming
 DEVICE_CODE_URL    = https://customer.bmwgroup.com/gcdm/oauth/device/code
 TOKEN_URL          = https://customer.bmwgroup.com/gcdm/oauth/token
 API_BASE_URL       = https://api-cardata.bmwgroup.com
-API_VERSION        = v1
+API_VERSION        = v1          (sent as x-version header, not in URL path)
 DEFAULT_STREAM_HOST = customer.streaming-cardata.bmwgroup.com
 DEFAULT_STREAM_PORT = 9000
 ```
+
+> **Note:** `API_VERSION` is passed as the `x-version` HTTP header on API requests, not as a URL path segment. All endpoint paths in Section 3.1 are relative to `API_BASE_URL`.
 
 ### 3.3 OAuth Scopes
 
@@ -1206,6 +1208,7 @@ For users who want to bridge BMW data through their own MQTT infrastructure:
 | `config_flow.py` | ~340 | HA config flow steps (user → authorize → tokens) |
 | `options_flow.py` | ~540 | Settings UI; service triggers from options menu |
 | `http_retry.py` | ~355 | Resilient HTTP with exponential backoff and rate awareness |
+| `api_parsing.py` | ~111 | JSON parsing utilities and dict key extraction helpers for BMW CarData API responses |
 
 ### Data Acquisition
 
@@ -1215,6 +1218,8 @@ For users who want to bridge BMW data through their own MQTT infrastructure:
 | `telematics.py` | ~775 | Periodic polling loop; trip-end triggers; daily fetches |
 | `container.py` | ~300+ | HV battery container CRUD; descriptor signature validation |
 | `metadata.py` | ~700 | Device metadata building; BEV detection; state restoration |
+| `descriptor_titles.py` | ~326 | Dictionary mapping descriptor strings to human-readable titles for vehicle telemetry fields |
+| `message_utils.py` | ~113 | Message validation and normalization with boolean descriptor detection and value mapping |
 
 ### Entity Platforms
 
@@ -1228,6 +1233,7 @@ For users who want to bridge BMW data through their own MQTT infrastructure:
 | `button.py` | ~228 | Learning reset buttons |
 | `number.py` | ~211 | Battery capacity override |
 | `sensor_diagnostics.py` | ~540 | Connection, metadata, efficiency, charging, tyre sensors |
+| `sensor_helpers.py` | ~208 | Unit mapping and device-class helpers for BMW CarData sensors |
 
 ### Computed Features
 
@@ -1237,6 +1243,9 @@ For users who want to bridge BMW data through their own MQTT infrastructure:
 | `soc_learning.py` | ~466 | Charging efficiency learning; session finalization |
 | `magic_soc.py` | ~704 | Driving consumption prediction |
 | `motion_detection.py` | ~637 | GPS-based motion detection |
+| `soc_types.py` | ~405 | Data types for SOC prediction including ChargingCondition, EfficiencyEntry, and LearnedEfficiency |
+| `soc_wiring.py` | ~731 | Bridges coordinator state with SOCPredictor (charging) and MagicSOCPredictor (driving) engines |
+| `geo_utils.py` | ~16 | Haversine formula for calculating distance between GPS coordinates |
 
 ### Infrastructure
 
@@ -1249,6 +1258,10 @@ For users who want to bridge BMW data through their own MQTT infrastructure:
 | `utils.py` | ~264 | VIN validation; redaction; async helpers |
 | `migrations.py` | ~212 | Entity ID prefix migration |
 | `device_info.py` | ~220 | Device metadata and BEV detection helpers |
+| `stream_reconnect.py` | ~292 | MQTT reconnection handler with token refresh, circuit breaker, and exponential backoff |
+| `coordinator_housekeeping.py` | ~261 | MQTT connection events, diagnostics tracking, and SOC predictor state management |
+| `debug.py` | ~46 | Dynamic debug flag management with global logger level control |
+| `units.py` | ~51 | Normalizes BMW CarData unit strings to canonical symbols |
 
 ### UI & Services
 
