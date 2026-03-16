@@ -1,0 +1,25 @@
+# Home Assistant (pinned to stable for integration development)
+homeassistant
+
+# Integration runtime dependency
+paho-mqtt>=1.6.1
+
+# Testing
+pytest
+pytest-asyncio
+pytest-homeassistant-custom-component
+pytest-cov
+pytest-socket
+pytest-timeout
+
+# Linting & formatting
+ruff
+
+# Type checking
+mypy
+
+# Debugging
+debugpy
+
+# Fuzzing (optional – only needed for fuzz/ tests)
+# atheris>=2.3.0,<3
