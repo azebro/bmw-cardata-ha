@@ -5,6 +5,9 @@
 /streaming_scopes_prefixed.txt
 /device_seed.json
 
+# Home Assistant config (local dev)
+config/
+
 # Python
 __pycache__/
 *.pyc
